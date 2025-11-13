@@ -8,6 +8,7 @@
 #define BOARD_WIDTH 16
 #define BOARD_HEIGHT 16
 #define CASE_SIZE 32
+#define APPLE_SIZE CASE_SIZE/2.0f*(2.0f/3.0f)
 #define SCREEN_WIDTH BOARD_WIDTH * CASE_SIZE
 #define SCREEN_HEIGHT BOARD_HEIGHT * CASE_SIZE
 #define SCREEN_FPS 60.0
@@ -151,7 +152,7 @@ void drawSnake(Node* head)
 void drawApples(Vector2* apples){
    for (int i = 0; i < APPLE_MAX; i++) {
       if (!Vector2Equals(apples[i], NOT_APPLE)){
-         DrawCircle(apples[i].x*CASE_SIZE+CASE_SIZE/2.0f, apples[i].y*CASE_SIZE+CASE_SIZE/2.0f, CASE_SIZE/2.0f, RED);
+         DrawCircle(apples[i].x*CASE_SIZE+CASE_SIZE/2.0f, apples[i].y*CASE_SIZE+CASE_SIZE/2.0f, APPLE_SIZE, RED);
       }
    }
 }

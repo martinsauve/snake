@@ -1,2 +1,2 @@
 snake: main.c makefile
-	gcc -lraylib -lm main.c -o snake && ./snake
+	gcc -O3 -lraylib -lm main.c -o snake && ./snake

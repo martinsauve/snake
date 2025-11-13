@@ -10,7 +10,8 @@
 #define CASE_SIZE 32
 #define SCREEN_WIDTH BOARD_WIDTH * CASE_SIZE
 #define SCREEN_HEIGHT BOARD_HEIGHT * CASE_SIZE
-#define TARGET_FPS 8.0
+#define SCREEN_FPS 60.0
+#define TARGET_FPS 6.0
 #define TARGET_SPF 1.0/TARGET_FPS
 
 #define LEFTVEC   (Vector2){-1, 0}
@@ -19,6 +20,9 @@
 #define DOWNVEC   (Vector2){ 0, 1}
 
 #define NOT_APPLE (Vector2){-1,-1}
+
+#define SNAKE_HEAD_COLOR (Color){0, 228, 48, 255}
+#define SNAKE_TAIL_COLOR (Color){255, 228, 48, 255}
 
 
 typedef enum direction {
@@ -88,6 +92,18 @@ void deleteAtBeginning(Node** head)
    free(temp);
 }
 
+size_t snakeLen(Node** head)
+{
+   size_t i = 1;
+   Node *temp = *head;
+   while (temp->next != NULL)
+   {
+      temp = temp->next;
+      i++;
+   }
+   return i;
+}
+
 void deleteAtEnd(Node** head)
 {
    if (*head == NULL) {
@@ -108,15 +124,29 @@ void deleteAtEnd(Node** head)
    free(temp);
 }
 
+Color lerpColor(Color col1, Color col2, float amount)
+{
+   Color out;
+   out.r = Lerp(col1.r, col2.r, amount);
+   out.g = Lerp(col1.g, col2.g, amount);
+   out.b = Lerp(col1.b, col2.b, amount);
+   out.a = Lerp(col1.a, col2.a, amount);
+   return out;
+}
+
 void drawSnake(Node* head)
 {
    Node* temp = head;
    int i = 0;
+   size_t len = snakeLen(&head);
+   float amount = 0;
    while (temp != NULL) {
+      amount = (float)i/(float)len;
+      DrawText(TextFormat("Length: %zu", len), 200, 15, 20, BLACK);
       DrawRectangle(
             temp->position.x*CASE_SIZE, temp->position.y*CASE_SIZE,
-            CASE_SIZE-1, CASE_SIZE-1,
-            (Color){10*i, 228, 48, 255} // TODO: Lerp me
+            CASE_SIZE, CASE_SIZE,
+            lerpColor(SNAKE_HEAD_COLOR, SNAKE_TAIL_COLOR, amount)
             );
 
       temp=temp->next;
@@ -147,6 +177,19 @@ void handleWrapAround(Node** head)
       (*head)->position.y = 0;
 }
 
+bool handleColision(Node** head)
+{
+   if (*head == NULL) return false;
+
+   Node* temp = (*head)->next;
+   while (temp != NULL) {
+      if (Vector2Equals((*head)->position, temp->position)) {
+         return true;
+      }
+      temp = temp->next;
+   }
+   return false;
+}
 
 
 int main(void)
@@ -160,12 +203,13 @@ int main(void)
       apples[i] = NOT_APPLE;
    }
 
-   apples[0] = (Vector2){17,17};
+   apples[0] = (Vector2){6,4};
    apples[1] = (Vector2){12,12};
 
    Direction direction = RIGHT;
 
    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "SNAKE");
+   SetTargetFPS(SCREEN_FPS);
 
    double oldTime = 0;
    double newTime = 0;
@@ -186,7 +230,7 @@ int main(void)
       DrawFPS(15,15);
 
       if (dt >= TARGET_SPF) dt = 0;
-      else goto endofloop;
+      else continue;
 
       ClearBackground(RAYWHITE);
 
@@ -204,6 +248,15 @@ int main(void)
             insertAtBeginning(&snake, Vector2Add(snake->position, RIGHTVEC));
             break;
       }
+      if (handleColision(&snake)) {
+         // reset snake
+         while (snake != NULL) {
+            deleteAtBeginning(&snake);
+         }
+         insertAtEnd(&snake, (Vector2){15,15});
+         direction = RIGHT;
+         goto draw;
+      }
 
       for (int i = 0; i < APPLE_MAX; i++) {
          if (!Vector2Equals(apples[i], (Vector2){-1, -1})){
@@ -220,7 +273,6 @@ draw:
       drawSnake(snake);
       EndDrawing();
 
-endofloop:
    }
 
    CloseWindow();

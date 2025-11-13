@@ -80,10 +80,7 @@ void insertAtEnd(Node** head, Vector2 position)
 
 void deleteAtBeginning(Node** head)
 {
-   if (*head == NULL) {
-      printf("list already empty\n");
-      return;
-   }
+   if (*head == NULL) return;
    Node* temp = *head;
    *head = (*head)->next;
    if (*head != NULL) {
@@ -106,10 +103,7 @@ size_t snakeLen(Node** head)
 
 void deleteAtEnd(Node** head)
 {
-   if (*head == NULL) {
-      printf("The list is already empty.\n");
-      return;
-   }
+   if (*head == NULL) return;
 
    Node* temp = *head;
    if (temp->next == NULL) {
@@ -139,10 +133,10 @@ void drawSnake(Node* head)
    Node* temp = head;
    int i = 0;
    size_t len = snakeLen(&head);
+   DrawText(TextFormat("Length: %zu", len), 200, 15, 20, BLACK);
    float amount = 0;
    while (temp != NULL) {
       amount = (float)i/(float)len;
-      DrawText(TextFormat("Length: %zu", len), 200, 15, 20, BLACK);
       DrawRectangle(
             temp->position.x*CASE_SIZE, temp->position.y*CASE_SIZE,
             CASE_SIZE, CASE_SIZE,
@@ -208,6 +202,7 @@ int main(void)
 
    Direction direction = RIGHT;
 
+   SetConfigFlags(FLAG_MSAA_4X_HINT);
    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "SNAKE");
    SetTargetFPS(SCREEN_FPS);
 
@@ -248,6 +243,7 @@ int main(void)
             insertAtBeginning(&snake, Vector2Add(snake->position, RIGHTVEC));
             break;
       }
+      handleWrapAround(&snake);
       if (handleColision(&snake)) {
          // reset snake
          while (snake != NULL) {
@@ -259,7 +255,7 @@ int main(void)
       }
 
       for (int i = 0; i < APPLE_MAX; i++) {
-         if (!Vector2Equals(apples[i], (Vector2){-1, -1})){
+         if (!Vector2Equals(apples[i], NOT_APPLE)){
             if (Vector2Equals(apples[i], snake->position)) {
                apples[i] = (Vector2){GetRandomValue(0, BOARD_WIDTH-1), GetRandomValue(0, BOARD_HEIGHT-1)};
                goto draw;
@@ -268,7 +264,6 @@ int main(void)
       }
       deleteAtEnd(&snake);
 draw:
-      handleWrapAround(&snake);
       drawApples(apples);
       drawSnake(snake);
       EndDrawing();
@@ -276,5 +271,5 @@ draw:
    }
 
    CloseWindow();
-   return (0);
+   return 0;
 }

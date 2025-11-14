@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <assert.h>
 
 
 #define APPLE_MAX    32
@@ -27,8 +28,8 @@
 
 #define SNAKE_SPAWN_POINT (Vector2){8,8}
 
-#define SNAKE_HEAD_COLOR (Color){0, 228, 48, 255}
-#define SNAKE_TAIL_COLOR (Color){255, 228, 48, 255}
+#define SNAKE_HEAD_COLOR (Color){  0, 228,  48, 255}
+#define SNAKE_TAIL_COLOR (Color){255, 228,  48, 255}
 
 
 typedef enum direction {
@@ -189,9 +190,7 @@ bool handleColision(Node** head)
 
    Node* temp = (*head)->next;
    while (temp != NULL) {
-      if (Vector2Equals((*head)->position, temp->position)) {
-         return true;
-      }
+      if (Vector2Equals((*head)->position, temp->position)) return true;
       temp = temp->next;
    }
    return false;
@@ -205,25 +204,26 @@ void spawnSnake(Node** head, Vector2 position, size_t length)
 }
 
 // accepts snake to avoid spawning apple under it
-Vector2 spawnApple(Node *snake)
+Vector2 spawnApple(Node** snake)
 {
-      Node* temp;
-      Vector2 apple;
+   assert (snake != NULL);
+   Node* temp;
+   Vector2 apple;
 
-      // game is won
-      if (snakeLen(&snake) >= BOARD_WIDTH * BOARD_HEIGHT) return NOT_APPLE;
+   // game is won
+   if (snakeLen(snake) >= BOARD_WIDTH * BOARD_HEIGHT) return NOT_APPLE;
 tryagain:
-      temp = snake;
-      apple = (Vector2){
-         GetRandomValue(0, BOARD_WIDTH-1),
-         GetRandomValue(0, BOARD_HEIGHT-1)
-      };
+   temp = *snake;
+   apple = (Vector2){
+      GetRandomValue(0, BOARD_WIDTH-1),
+      GetRandomValue(0, BOARD_HEIGHT-1)
+   };
 
-      while (temp != NULL) {
-         if (Vector2Equals(apple, temp->position)) goto tryagain;
-         temp=temp->next;
-      }
-      return apple;
+   while (temp != NULL) {
+      if (Vector2Equals(apple, temp->position)) goto tryagain;
+      temp=temp->next;
+   }
+   return apple;
 }
 
 
@@ -261,13 +261,14 @@ int main(void)
       oldTime =  newTime;
       newTime =  GetTime();
       dt     +=  newTime - oldTime;
+
       BeginDrawing();
+      ClearBackground(RAYWHITE);
       DrawFPS(15,15);
 
       if (dt >= TARGET_SPF) dt = 0;
       else continue;
 
-      ClearBackground(RAYWHITE);
 
       switch (direction){
          case UP:
@@ -299,7 +300,7 @@ int main(void)
       for (int i = 0; i < APPLE_MAX; i++) {
          if (!Vector2Equals(apples[i], NOT_APPLE)){
             if (Vector2Equals(apples[i], snake->position)) {
-               apples[i] = spawnApple(snake);
+               apples[i] = spawnApple(&snake);
                goto draw;
             }
          }
@@ -307,9 +308,9 @@ int main(void)
       deleteAtEnd(&snake);
 
 draw:
-      DrawText(TextFormat("Length: %zu", snakeLen(&snake)), 200, 15, 20, BLACK);
       drawApples(apples);
       drawSnake(snake);
+      DrawText(TextFormat("Length: %zu", snakeLen(&snake)), 200, 15, 20, BLACK);
       EndDrawing();
 
    }

@@ -1,4 +1,4 @@
-CFLAGS += -I./raylib/include -L./raylib/lib
+CFLAGS += -I./raylib/include -L./raylib/lib -Wall -Wextra -Wpedantic -O3
 LFLAGS += -l:libraylib.a -lm
 
 snake: main.c makefile dl

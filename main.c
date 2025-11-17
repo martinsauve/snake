@@ -167,6 +167,10 @@ void drawEyes(Node* head)
          eyeOffset1 = (Vector2){CASE_SIZE * 0.6f, CASE_SIZE * 0.2f};
          eyeOffset2 = (Vector2){CASE_SIZE * 0.6f, CASE_SIZE * 0.6f};
          break;
+      default:
+         eyeOffset1 = (Vector2){CASE_SIZE * 0.6f, CASE_SIZE * 0.2f};
+         eyeOffset2 = (Vector2){CASE_SIZE * 0.6f, CASE_SIZE * 0.6f};
+         break;
    }
    DrawCircle(
          head->data.position.x * CASE_SIZE + eyeOffset1.x,
@@ -364,20 +368,19 @@ void computePhysics(Node **snake, Vector2* apples, Direction direction)
          deleteAtBeginning(snake);
       }
       spawnSnake(snake, (Data){SNAKE_SPAWN_POINT, RIGHT}, 3);
-      //direction = RIGHT;
-      return; //direction;
+      return;
    }
 
    for (int i = 0; i < APPLE_MAX; i++) {
       if (!Vector2Equals(apples[i], NOT_APPLE)){
          if (Vector2Equals(apples[i], (*snake)->data.position)) {
             apples[i] = spawnApple(snake);
-            return; //direction;
+            return;
          }
       }
    }
    deleteAtEnd(snake);
-   return; //direction;
+   return;
 }
 
 
@@ -422,7 +425,6 @@ int main(void)
       if (key == KEY_LEFT  && direction != RIGHT) direction = LEFT;
       if (key == KEY_DOWN  && direction != UP   ) direction = DOWN;
 #ifdef TOUCH_SUPPORT
-      // TOUCH GESTURES
       if (IsGestureDetected(GESTURE_SWIPE_RIGHT) && direction != LEFT)
          direction = RIGHT;
       if (IsGestureDetected(GESTURE_SWIPE_UP) && direction != DOWN)

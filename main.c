@@ -5,6 +5,7 @@
 #include <time.h>
 #include <assert.h>
 
+//#define DEBUG
 
 #define APPLE_MAX    32
 #define BOARD_WIDTH  16
@@ -318,13 +319,20 @@ Vector2 spawnApple(Node** snake)
 
    if (snakeLen(snake) >= BOARD_WIDTH * BOARD_HEIGHT) return NOT_APPLE;
    do {
+      colision = false;
       temp = *snake;
       apple = (Vector2){
          GetRandomValue(0, BOARD_WIDTH-1),
          GetRandomValue(0, BOARD_HEIGHT-1)
       };
       while (temp != NULL) {
-         if (Vector2Equals(apple, temp->data.position)) colision = true;
+         if (Vector2Equals(apple, temp->data.position)) {
+            colision = true;
+#ifdef DEBUG
+            printf("cant spawn apple here, covered by snake: x:%f, y:%f, \n", temp->data.position.x, temp->data.position.y);
+            fflush(stdout);
+#endif
+         }
          temp=temp->next;
       }
    } while (colision);

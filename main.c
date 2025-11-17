@@ -28,8 +28,18 @@
 
 #define SNAKE_SPAWN_POINT (Vector2){8,8}
 
-#define SNAKE_HEAD_COLOR (Color){  0, 228,  48, 255}
-#define SNAKE_TAIL_COLOR (Color){255, 228,  48, 255}
+//#define SNAKE_HEAD_COLOR (Color){  0, 228,  48, 255}
+//#define SNAKE_TAIL_COLOR (Color){255, 228,  48, 255}
+#define SNAKE_HEAD_COLOR ORANGE
+#define SNAKE_TAIL_COLOR PURPLE
+
+//#98971a
+#define APPLE_COLOR (Color){0x98, 0x97, 0x1a, 0xff}
+
+#define BACKGROUND_COLOR (Color){0x28, 0x28, 0x28, 0xff}
+//#ebdbb2
+#define TEXT_COLOR (Color){0xeb, 0xdb, 0xb2, 0xff}
+
 
 
 typedef enum direction {
@@ -39,26 +49,31 @@ typedef enum direction {
    DOWN
 } Direction;
 
-typedef struct Node {
+typedef struct data {
    Vector2 position;
+   Direction direction;
+} Data;
+
+typedef struct Node {
+   Data data;
    struct  Node* next;
    struct  Node* prev;
 } Node;
 
 
 
-Node* createNode(Vector2 position)
+Node* createNode(Data data)
 {
    Node *newNode = (Node*)malloc(sizeof(Node));
-   newNode->position = position;
+   newNode->data = data;
    newNode->next = NULL;
    newNode->prev = NULL;
    return newNode;
 }
 
-void insertAtBeginning(Node** head, Vector2 position)
+void insertAtBeginning(Node** head, Data data)
 {
-   Node * newNode = createNode(position);
+   Node * newNode = createNode(data);
 
    if (*head == NULL) {
       *head = newNode;
@@ -69,9 +84,9 @@ void insertAtBeginning(Node** head, Vector2 position)
    *head = newNode;
 }
 
-void insertAtEnd(Node** head, Vector2 position)
+void insertAtEnd(Node** head, Data data)
 {
-   Node* newNode = createNode(position);
+   Node* newNode = createNode(data);
 
    if (*head == NULL) {
       *head = newNode;
@@ -133,27 +148,113 @@ Color lerpColor(Color col1, Color col2, float amount)
    return out;
 }
 
+void drawEyes(Node* head)
+{
+   Vector2 eyeOffset1, eyeOffset2;
+   switch (head->data.direction) {
+      case UP:
+         eyeOffset1 = (Vector2){CASE_SIZE * 0.2f, CASE_SIZE * 0.2f};
+         eyeOffset2 = (Vector2){CASE_SIZE * 0.6f, CASE_SIZE * 0.2f};
+         break;
+      case DOWN:
+         eyeOffset1 = (Vector2){CASE_SIZE * 0.2f, CASE_SIZE * 0.6f};
+         eyeOffset2 = (Vector2){CASE_SIZE * 0.6f, CASE_SIZE * 0.6f};
+         break;
+      case LEFT:
+         eyeOffset1 = (Vector2){CASE_SIZE * 0.2f, CASE_SIZE * 0.2f};
+         eyeOffset2 = (Vector2){CASE_SIZE * 0.2f, CASE_SIZE * 0.6f};
+         break;
+      case RIGHT:
+         eyeOffset1 = (Vector2){CASE_SIZE * 0.6f, CASE_SIZE * 0.2f};
+         eyeOffset2 = (Vector2){CASE_SIZE * 0.6f, CASE_SIZE * 0.6f};
+         break;
+   }
+   DrawCircle(
+         head->data.position.x * CASE_SIZE + eyeOffset1.x,
+         head->data.position.y * CASE_SIZE + eyeOffset1.y,
+         CASE_SIZE * 0.1f,
+         BLACK
+         );
+   DrawCircle(
+         head->data.position.x * CASE_SIZE + eyeOffset2.x,
+         head->data.position.y * CASE_SIZE + eyeOffset2.y,
+         CASE_SIZE * 0.1f,
+         BLACK
+         );
+}
+
 void drawSnake(Node* head)
 {
    Node* temp = head;
    int i = 0;
    size_t len = snakeLen(&head);
    float amount = 0;
+   float amountNext = 0;
 
    while (temp != NULL) {
-      amount = (float)i / (float)len;
-      DrawRectangle(
-            temp->position.x * CASE_SIZE,
-            temp->position.y * CASE_SIZE,
-            CASE_SIZE,
-            CASE_SIZE,
-            lerpColor(SNAKE_HEAD_COLOR, SNAKE_TAIL_COLOR, amount)
-            );
+      amount = 1.0f - ((float)i / (float)len);
+      amountNext = 1.0f - ((float)(i + 1) / (float)len);
+
+      switch (temp->data.direction) {
+         case LEFT:
+            DrawRectangleGradientH(
+                  temp->data.position.x * CASE_SIZE,
+                  temp->data.position.y * CASE_SIZE,
+                  CASE_SIZE,
+                  CASE_SIZE,
+                  lerpColor(SNAKE_TAIL_COLOR,SNAKE_HEAD_COLOR, amount),
+                  lerpColor(SNAKE_TAIL_COLOR,SNAKE_HEAD_COLOR, amountNext)
+                  );
+            break;
+         case RIGHT:
+            DrawRectangleGradientH(
+                  temp->data.position.x * CASE_SIZE,
+                  temp->data.position.y * CASE_SIZE,
+                  CASE_SIZE,
+                  CASE_SIZE,
+                  lerpColor(SNAKE_TAIL_COLOR,SNAKE_HEAD_COLOR, amountNext),
+                  lerpColor(SNAKE_TAIL_COLOR,SNAKE_HEAD_COLOR, amount)
+                  );
+            break;
+         case UP:
+            DrawRectangleGradientV(
+                  temp->data.position.x * CASE_SIZE,
+                  temp->data.position.y * CASE_SIZE,
+                  CASE_SIZE,
+                  CASE_SIZE,
+                  lerpColor(SNAKE_TAIL_COLOR, SNAKE_HEAD_COLOR, amount),
+                  lerpColor(SNAKE_TAIL_COLOR, SNAKE_HEAD_COLOR, amountNext)
+                  );
+            break;
+         case DOWN:
+            DrawRectangleGradientV(
+                  temp->data.position.x * CASE_SIZE,
+                  temp->data.position.y * CASE_SIZE,
+                  CASE_SIZE,
+                  CASE_SIZE,
+                  lerpColor(SNAKE_TAIL_COLOR, SNAKE_HEAD_COLOR, amountNext),
+                  lerpColor(SNAKE_TAIL_COLOR, SNAKE_HEAD_COLOR, amount)
+                  );
+            break;
+      }
+      if (i == 0) drawEyes(temp);
+
+
+      //// No gradient version
+      //DrawRectangle(
+      //      temp->data.position.x * CASE_SIZE,
+      //      temp->data.position.y * CASE_SIZE,
+      //      CASE_SIZE,
+      //      CASE_SIZE,
+      //      lerpColor(SNAKE_HEAD_COLOR, SNAKE_TAIL_COLOR, amount)
+      //      );
 
       temp=temp->next;
       i++;
    }
 }
+
+
 
 void drawApples(Vector2* apples)
 {
@@ -163,7 +264,7 @@ void drawApples(Vector2* apples)
                apples[i].x * CASE_SIZE + CASE_SIZE / 2.0f,
                apples[i].y * CASE_SIZE + CASE_SIZE / 2.0f,
                APPLE_SIZE,
-               RED
+               APPLE_COLOR
                );
       }
    }
@@ -173,15 +274,15 @@ void handleWrapAround(Node** head)
 {
    if (*head == NULL) return;
 
-   if ((*head)->position.x < 0)
-      (*head)->position.x = BOARD_WIDTH - 1;
-   else if ((*head)->position.x >= BOARD_WIDTH)
-      (*head)->position.x = 0;
+   if ((*head)->data.position.x < 0)
+      (*head)->data.position.x = BOARD_WIDTH - 1;
+   else if ((*head)->data.position.x >= BOARD_WIDTH)
+      (*head)->data.position.x = 0;
 
-   if ((*head)->position.y < 0)
-      (*head)->position.y = BOARD_HEIGHT - 1;
-   else if ((*head)->position.y >= BOARD_HEIGHT)
-      (*head)->position.y = 0;
+   if ((*head)->data.position.y < 0)
+      (*head)->data.position.y = BOARD_HEIGHT - 1;
+   else if ((*head)->data.position.y >= BOARD_HEIGHT)
+      (*head)->data.position.y = 0;
 }
 
 bool handleColision(Node** head)
@@ -190,16 +291,20 @@ bool handleColision(Node** head)
 
    Node* temp = (*head)->next;
    while (temp != NULL) {
-      if (Vector2Equals((*head)->position, temp->position)) return true;
+      if (Vector2Equals((*head)->data.position, temp->data.position)) return true;
       temp = temp->next;
    }
    return false;
 }
 
-void spawnSnake(Node** head, Vector2 position, size_t length)
+void spawnSnake(Node** head, Data data, size_t length)
 {
    for (size_t i = 0; i < length; i++) {
-      insertAtEnd(head, (Vector2){position.x - i, position.y});
+      data = (Data){
+         .position = (Vector2){data.position.x - i, data.position.y},
+         .direction = RIGHT
+      };
+      insertAtEnd(head, data);
    }
 }
 
@@ -209,21 +314,63 @@ Vector2 spawnApple(Node** snake)
    assert (snake != NULL);
    Node* temp;
    Vector2 apple;
+   bool colision = false;
 
-   // game is won
    if (snakeLen(snake) >= BOARD_WIDTH * BOARD_HEIGHT) return NOT_APPLE;
-tryagain:
-   temp = *snake;
-   apple = (Vector2){
-      GetRandomValue(0, BOARD_WIDTH-1),
-      GetRandomValue(0, BOARD_HEIGHT-1)
-   };
-
-   while (temp != NULL) {
-      if (Vector2Equals(apple, temp->position)) goto tryagain;
-      temp=temp->next;
-   }
+   do {
+      temp = *snake;
+      apple = (Vector2){
+         GetRandomValue(0, BOARD_WIDTH-1),
+         GetRandomValue(0, BOARD_HEIGHT-1)
+      };
+      while (temp != NULL) {
+         if (Vector2Equals(apple, temp->data.position)) colision = true;
+         temp=temp->next;
+      }
+   } while (colision);
    return apple;
+}
+
+
+void computePhysics(Node **snake, Vector2* apples, Direction direction)
+{
+   switch (direction){
+      case UP:
+         insertAtBeginning(snake, (Data){Vector2Add((*snake)->data.position, UPVEC), UP});
+         break;
+      case DOWN:
+         insertAtBeginning(snake, (Data){Vector2Add((*snake)->data.position, DOWNVEC), DOWN});
+         break;
+      case LEFT:
+         insertAtBeginning(snake, (Data){Vector2Add((*snake)->data.position, LEFTVEC), LEFT});
+         break;
+      case RIGHT:
+         insertAtBeginning(snake, (Data){Vector2Add((*snake)->data.position, RIGHTVEC), RIGHT});
+         break;
+   }
+
+   handleWrapAround(snake);
+
+   if (handleColision(snake)) {
+      // reset snake
+      while (*snake != NULL) {
+         deleteAtBeginning(snake);
+      }
+      spawnSnake(snake, (Data){SNAKE_SPAWN_POINT, RIGHT}, 3);
+      //direction = RIGHT;
+      return; //direction;
+   }
+
+   for (int i = 0; i < APPLE_MAX; i++) {
+      if (!Vector2Equals(apples[i], NOT_APPLE)){
+         if (Vector2Equals(apples[i], (*snake)->data.position)) {
+            apples[i] = spawnApple(snake);
+            return; //direction;
+         }
+      }
+   }
+   deleteAtEnd(snake);
+   return; //direction;
 }
 
 
@@ -234,13 +381,14 @@ int main(void)
    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "SNAKE");
    SetTargetFPS(SCREEN_FPS);
 
+   Node* snake = NULL;
+   spawnSnake(&snake, (Data){SNAKE_SPAWN_POINT, RIGHT}, 3);
+
    Vector2 apples[APPLE_MAX];
    for (int i = 0; i < APPLE_MAX; i++) apples[i] = NOT_APPLE;
-   apples[0] = (Vector2){ 6, 4};
-   apples[1] = (Vector2){12,12};
-
-   Node* snake = NULL;
-   spawnSnake(&snake, SNAKE_SPAWN_POINT, 3);
+   apples[0] = spawnApple(&snake);
+   apples[1] = spawnApple(&snake);
+   apples[2] = spawnApple(&snake);
 
    Direction direction = RIGHT;
 
@@ -262,55 +410,23 @@ int main(void)
       newTime =  GetTime();
       dt     +=  newTime - oldTime;
 
+      if (dt >= TARGET_SPF) {
+         computePhysics(&snake, apples, direction);
+         dt = 0;
+      }
+
       BeginDrawing();
-      ClearBackground(RAYWHITE);
-      DrawFPS(15,15);
-
-      if (dt >= TARGET_SPF) dt = 0;
-      else continue;
+      {
+         DrawText(TextFormat("dt: %f", dt), 50, 50, 10, BEIGE);
+         DrawFPS(15,15);
 
 
-      switch (direction){
-         case UP:
-            insertAtBeginning(&snake, Vector2Add(snake->position, UPVEC));
-            break;
-         case DOWN:
-            insertAtBeginning(&snake, Vector2Add(snake->position, DOWNVEC));
-            break;
-         case LEFT:
-            insertAtBeginning(&snake, Vector2Add(snake->position, LEFTVEC));
-            break;
-         case RIGHT:
-            insertAtBeginning(&snake, Vector2Add(snake->position, RIGHTVEC));
-            break;
+         ClearBackground(BACKGROUND_COLOR);
+         //ClearBackground((Color){255*dt*6, 255-255*dt*6, 255, 255}); // EPILEPSY MODE
+         drawApples(apples);
+         drawSnake(snake);
+         DrawText(TextFormat("Length: %zu", snakeLen(&snake)), 200, 15, 20, TEXT_COLOR);
       }
-
-      handleWrapAround(&snake);
-
-      if (handleColision(&snake)) {
-         // reset snake
-         while (snake != NULL) {
-            deleteAtBeginning(&snake);
-         }
-         spawnSnake(&snake, SNAKE_SPAWN_POINT, 3);
-         direction = RIGHT;
-         goto draw;
-      }
-
-      for (int i = 0; i < APPLE_MAX; i++) {
-         if (!Vector2Equals(apples[i], NOT_APPLE)){
-            if (Vector2Equals(apples[i], snake->position)) {
-               apples[i] = spawnApple(&snake);
-               goto draw;
-            }
-         }
-      }
-      deleteAtEnd(&snake);
-
-draw:
-      drawApples(apples);
-      drawSnake(snake);
-      DrawText(TextFormat("Length: %zu", snakeLen(&snake)), 200, 15, 20, BLACK);
       EndDrawing();
 
    }

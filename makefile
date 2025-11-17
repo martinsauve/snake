@@ -4,8 +4,7 @@ LFLAGS += -l:libraylib.a -lm
 snake: main.c makefile dl
 	gcc $(CFLAGS) main.c -o snake $(LFLAGS)
 
-dl:
-	@echo "Downloading raylib..."
+dl: download-raylib.sh
 	@if [ ! -d "raylib" ]; then \
 		./download-raylib.sh;\
 		fi

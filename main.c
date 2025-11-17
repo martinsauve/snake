@@ -35,11 +35,9 @@
 #define SNAKE_TAIL_COLOR PURPLE
 
 //#98971a
-#define APPLE_COLOR (Color){0x98, 0x97, 0x1a, 0xff}
-
+#define APPLE_COLOR      (Color){0x98, 0x97, 0x1a, 0xff}
 #define BACKGROUND_COLOR (Color){0x28, 0x28, 0x28, 0xff}
-//#ebdbb2
-#define TEXT_COLOR (Color){0xeb, 0xdb, 0xb2, 0xff}
+#define TEXT_COLOR       (Color){0xeb, 0xdb, 0xb2, 0xff}
 
 
 
@@ -111,18 +109,6 @@ void deleteAtBeginning(Node** head)
    free(temp);
 }
 
-size_t snakeLen(Node** head)
-{
-   size_t i = 1;
-   Node *temp = *head;
-
-   while (temp->next != NULL) {
-      temp = temp->next;
-      i++;
-   }
-   return i;
-}
-
 void deleteAtEnd(Node** head)
 {
    if (*head == NULL) return;
@@ -138,15 +124,27 @@ void deleteAtEnd(Node** head)
    free(temp);
 }
 
+size_t snakeLen(Node** head)
+{
+   size_t i = 1;
+   Node *temp = *head;
+
+   while (temp->next != NULL) {
+      temp = temp->next;
+      i++;
+   }
+   return i;
+}
+
+
 Color lerpColor(Color col1, Color col2, float amount)
 {
-   Color out;
-
-   out.r = Lerp(col1.r, col2.r, amount);
-   out.g = Lerp(col1.g, col2.g, amount);
-   out.b = Lerp(col1.b, col2.b, amount);
-   out.a = Lerp(col1.a, col2.a, amount);
-   return out;
+   return (Color) {
+      .r = Lerp(col1.r, col2.r, amount),
+      .g = Lerp(col1.g, col2.g, amount),
+      .b = Lerp(col1.b, col2.b, amount),
+      .a = Lerp(col1.a, col2.a, amount)
+   };
 }
 
 void drawEyes(Node* head)
@@ -318,6 +316,7 @@ Vector2 spawnApple(Node** snake)
    bool colision = false;
 
    if (snakeLen(snake) >= BOARD_WIDTH * BOARD_HEIGHT) return NOT_APPLE;
+
    do {
       colision = false;
       temp = *snake;
@@ -384,6 +383,15 @@ void computePhysics(Node **snake, Vector2* apples, Direction direction)
 
 int main(void)
 {
+   // RL SETUP
+#ifdef TOUCH_SUPPORT
+   SetGesturesEnabled(
+         GESTURE_SWIPE_DOWN &
+         GESTURE_SWIPE_LEFT &
+         GESTURE_SWIPE_UP   &
+         GESTURE_SWIPE_RIGHT
+         );
+#endif
    SetRandomSeed(time(NULL));
    SetConfigFlags(FLAG_MSAA_4X_HINT);
    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "SNAKE");
@@ -413,6 +421,17 @@ int main(void)
       if (key == KEY_UP    && direction != DOWN ) direction = UP;
       if (key == KEY_LEFT  && direction != RIGHT) direction = LEFT;
       if (key == KEY_DOWN  && direction != UP   ) direction = DOWN;
+#ifdef TOUCH_SUPPORT
+      // TOUCH GESTURES
+      if (IsGestureDetected(GESTURE_SWIPE_RIGHT) && direction != LEFT)
+         direction = RIGHT;
+      if (IsGestureDetected(GESTURE_SWIPE_UP) && direction != DOWN)
+         direction = UP;
+      if (IsGestureDetected(GESTURE_SWIPE_LEFT) && direction != RIGHT)
+         direction = LEFT;
+      if (IsGestureDetected(GESTURE_SWIPE_DOWN) && direction != UP)
+         direction = DOWN;
+#endif
 
       oldTime =  newTime;
       newTime =  GetTime();
@@ -425,7 +444,7 @@ int main(void)
 
       BeginDrawing();
       {
-         DrawText(TextFormat("dt: %f", dt), 50, 50, 10, BEIGE);
+         //DrawText(TextFormat("dt: %f", dt), 50, 50, 10, BEIGE);
          DrawFPS(15,15);
 
 

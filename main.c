@@ -16,7 +16,7 @@
 #define SCREEN_WIDTH  BOARD_WIDTH  * CASE_SIZE
 #define SCREEN_HEIGHT BOARD_HEIGHT * CASE_SIZE
 
-#define SCREEN_FPS 60.0
+#define SCREEN_FPS 120.0
 #define TARGET_FPS 6.0
 #define TARGET_SPF 1.0 / TARGET_FPS
 
@@ -147,10 +147,10 @@ Color lerpColor(Color col1, Color col2, float amount)
    };
 }
 
-void drawEyes(Node* head)
+void drawEyes(Vector2 position, Direction direction)
 {
    Vector2 eyeOffset1, eyeOffset2;
-   switch (head->data.direction) {
+   switch (direction) {
       case UP:
          eyeOffset1 = (Vector2){CASE_SIZE * 0.2f, CASE_SIZE * 0.2f};
          eyeOffset2 = (Vector2){CASE_SIZE * 0.6f, CASE_SIZE * 0.2f};
@@ -173,74 +173,127 @@ void drawEyes(Node* head)
          break;
    }
    DrawCircle(
-         head->data.position.x * CASE_SIZE + eyeOffset1.x,
-         head->data.position.y * CASE_SIZE + eyeOffset1.y,
+         position.x * CASE_SIZE + eyeOffset1.x,
+         position.y * CASE_SIZE + eyeOffset1.y,
          CASE_SIZE * 0.1f,
          BLACK
          );
    DrawCircle(
-         head->data.position.x * CASE_SIZE + eyeOffset2.x,
-         head->data.position.y * CASE_SIZE + eyeOffset2.y,
+         position.x * CASE_SIZE + eyeOffset2.x,
+         position.y * CASE_SIZE + eyeOffset2.y,
          CASE_SIZE * 0.1f,
          BLACK
          );
 }
 
-void drawSnake(Node* head)
+void drawSnake(Node* head, float dt)
 {
    Node* temp = head;
    int i = 0;
    size_t len = snakeLen(&head);
    float amount = 0;
    float amountNext = 0;
+   Vector2 eyePos;
 
    while (temp != NULL) {
       amount = 1.0f - ((float)i / (float)len);
       amountNext = 1.0f - ((float)(i + 1) / (float)len);
 
-      switch (temp->data.direction) {
-         case LEFT:
-            DrawRectangleGradientH(
-                  temp->data.position.x * CASE_SIZE,
-                  temp->data.position.y * CASE_SIZE,
-                  CASE_SIZE,
-                  CASE_SIZE,
-                  lerpColor(SNAKE_TAIL_COLOR,SNAKE_HEAD_COLOR, amount),
-                  lerpColor(SNAKE_TAIL_COLOR,SNAKE_HEAD_COLOR, amountNext)
-                  );
-            break;
-         case RIGHT:
-            DrawRectangleGradientH(
-                  temp->data.position.x * CASE_SIZE,
-                  temp->data.position.y * CASE_SIZE,
-                  CASE_SIZE,
-                  CASE_SIZE,
-                  lerpColor(SNAKE_TAIL_COLOR,SNAKE_HEAD_COLOR, amountNext),
-                  lerpColor(SNAKE_TAIL_COLOR,SNAKE_HEAD_COLOR, amount)
-                  );
-            break;
-         case UP:
-            DrawRectangleGradientV(
-                  temp->data.position.x * CASE_SIZE,
-                  temp->data.position.y * CASE_SIZE,
-                  CASE_SIZE,
-                  CASE_SIZE,
-                  lerpColor(SNAKE_TAIL_COLOR, SNAKE_HEAD_COLOR, amount),
-                  lerpColor(SNAKE_TAIL_COLOR, SNAKE_HEAD_COLOR, amountNext)
-                  );
-            break;
-         case DOWN:
-            DrawRectangleGradientV(
-                  temp->data.position.x * CASE_SIZE,
-                  temp->data.position.y * CASE_SIZE,
-                  CASE_SIZE,
-                  CASE_SIZE,
-                  lerpColor(SNAKE_TAIL_COLOR, SNAKE_HEAD_COLOR, amountNext),
-                  lerpColor(SNAKE_TAIL_COLOR, SNAKE_HEAD_COLOR, amount)
-                  );
-            break;
+
+
+      // HEAD SMOOTH MOVEMENT
+      if (i == 0) // HEAD
+      {
+         switch (temp->data.direction) {
+            case LEFT:
+               DrawRectangleGradientH(
+                     ((temp->data.position.x * CASE_SIZE) - CASE_SIZE*dt) + CASE_SIZE+2,
+                     temp->data.position.y * CASE_SIZE,
+                     CASE_SIZE*dt,
+                     CASE_SIZE,
+                     lerpColor(SNAKE_TAIL_COLOR,SNAKE_HEAD_COLOR, amount),
+                     lerpColor(SNAKE_TAIL_COLOR,SNAKE_HEAD_COLOR, amountNext)
+                     );
+                     eyePos = (Vector2){(temp->data.position.x - dt + 1), temp->data.position.y};
+               break;
+            case RIGHT:
+               DrawRectangleGradientH(
+                     temp->data.position.x * CASE_SIZE,
+                     temp->data.position.y * CASE_SIZE,
+                     CASE_SIZE*dt,
+                     CASE_SIZE,
+                     lerpColor(SNAKE_TAIL_COLOR,SNAKE_HEAD_COLOR, amountNext),
+                     lerpColor(SNAKE_TAIL_COLOR,SNAKE_HEAD_COLOR, amount)
+                     );
+                     eyePos = (Vector2){(temp->data.position.x + dt - 1), temp->data.position.y};
+               break;
+            case UP:
+               DrawRectangleGradientV(
+                     temp->data.position.x * CASE_SIZE,
+                     ((temp->data.position.y * CASE_SIZE) - CASE_SIZE*dt) + CASE_SIZE+2,
+                     CASE_SIZE,
+                     CASE_SIZE*dt,
+                     lerpColor(SNAKE_TAIL_COLOR, SNAKE_HEAD_COLOR, amount),
+                     lerpColor(SNAKE_TAIL_COLOR, SNAKE_HEAD_COLOR, amountNext)
+                     );
+                     eyePos = (Vector2){temp->data.position.x, (temp->data.position.y - dt + 1 )};
+               break;
+            case DOWN:
+               DrawRectangleGradientV(
+                     temp->data.position.x * CASE_SIZE,
+                     temp->data.position.y * CASE_SIZE,
+                     CASE_SIZE,
+                     CASE_SIZE*dt,
+                     lerpColor(SNAKE_TAIL_COLOR, SNAKE_HEAD_COLOR, amountNext),
+                     lerpColor(SNAKE_TAIL_COLOR, SNAKE_HEAD_COLOR, amount)
+                     );
+                     eyePos = (Vector2){temp->data.position.x, (temp->data.position.y + dt - 1 )};
+               break;
+         }
+      } else { // BODY AND TAIL
+         switch (temp->data.direction) {
+            case LEFT:
+               DrawRectangleGradientH(
+                     temp->data.position.x * CASE_SIZE,
+                     temp->data.position.y * CASE_SIZE,
+                     CASE_SIZE,
+                     CASE_SIZE,
+                     lerpColor(SNAKE_TAIL_COLOR,SNAKE_HEAD_COLOR, amount),
+                     lerpColor(SNAKE_TAIL_COLOR,SNAKE_HEAD_COLOR, amountNext)
+                     );
+               break;
+            case RIGHT:
+               DrawRectangleGradientH(
+                     temp->data.position.x * CASE_SIZE,
+                     temp->data.position.y * CASE_SIZE,
+                     CASE_SIZE,
+                     CASE_SIZE,
+                     lerpColor(SNAKE_TAIL_COLOR,SNAKE_HEAD_COLOR, amountNext),
+                     lerpColor(SNAKE_TAIL_COLOR,SNAKE_HEAD_COLOR, amount)
+                     );
+               break;
+            case UP:
+               DrawRectangleGradientV(
+                     temp->data.position.x * CASE_SIZE,
+                     temp->data.position.y * CASE_SIZE,
+                     CASE_SIZE,
+                     CASE_SIZE,
+                     lerpColor(SNAKE_TAIL_COLOR, SNAKE_HEAD_COLOR, amount),
+                     lerpColor(SNAKE_TAIL_COLOR, SNAKE_HEAD_COLOR, amountNext)
+                     );
+               break;
+            case DOWN:
+               DrawRectangleGradientV(
+                     temp->data.position.x * CASE_SIZE,
+                     temp->data.position.y * CASE_SIZE,
+                     CASE_SIZE,
+                     CASE_SIZE,
+                     lerpColor(SNAKE_TAIL_COLOR, SNAKE_HEAD_COLOR, amountNext),
+                     lerpColor(SNAKE_TAIL_COLOR, SNAKE_HEAD_COLOR, amount)
+                     );
+               break;
+         }
       }
-      if (i == 0) drawEyes(temp);
 
 
       //// No gradient version
@@ -255,6 +308,7 @@ void drawSnake(Node* head)
       temp=temp->next;
       i++;
    }
+   drawEyes(eyePos, head->data.direction);
 }
 
 
@@ -444,16 +498,16 @@ int main(void)
          dt = 0;
       }
 
+      float ndt = dt * TARGET_FPS; // normalized dt for smooth rendering
+
       BeginDrawing();
       {
          //DrawText(TextFormat("dt: %f", dt), 50, 50, 10, BEIGE);
          DrawFPS(15,15);
-
-
          ClearBackground(BACKGROUND_COLOR);
          //ClearBackground((Color){255*dt*6, 255-255*dt*6, 255, 255}); // EPILEPSY MODE
          drawApples(apples);
-         drawSnake(snake);
+         drawSnake(snake, ndt);
          DrawText(TextFormat("Length: %zu", snakeLen(&snake)), 200, 15, 20, TEXT_COLOR);
       }
       EndDrawing();

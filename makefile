@@ -1,8 +1,12 @@
 CFLAGS += -I./raylib/include -L./raylib/lib -Wall -Wextra -Wpedantic -O3
-LFLAGS += -l:libraylib.a -lm
+STATIC_LFLAGS += -l:libraylib.a -lm
+LFLAGS += -lraylib -lm
+
+#static: main.c makefile dl
+#	gcc $(CFLAGS) main.c -o snake $(STATIC_LFLAGS)
 
 snake: main.c makefile dl
-	gcc $(CFLAGS) main.c -o snake $(LFLAGS)
+	gcc $(CFLAGS) main.c -o snake $(STATIC_LFLAGS)
 
 dl: download-raylib.sh
 	@if [ ! -d "raylib" ]; then \

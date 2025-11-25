@@ -6,6 +6,7 @@
 #include <assert.h>
 
 //#define DEBUG
+#define SHOW_FPS
 
 #define APPLE_MAX    32
 #define BOARD_WIDTH  16
@@ -15,6 +16,7 @@
 
 #define SCREEN_WIDTH  BOARD_WIDTH  * CASE_SIZE
 #define SCREEN_HEIGHT BOARD_HEIGHT * CASE_SIZE
+#define RL_WINDOW_CONFIG_FLAGS (FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT)
 
 #define SCREEN_FPS 120.0
 #define TARGET_FPS 6.0
@@ -40,7 +42,10 @@
 #define TEXT_COLOR       (Color){0xeb, 0xdb, 0xb2, 0xff}
 
 
-
+#define KEYBIND_LEFT       (key == KEY_LEFT  || key == KEY_H  || key == KEY_A)
+#define KEYBIND_DOWN       (key == KEY_DOWN  || key == KEY_J  || key == KEY_S)
+#define KEYBIND_UP         (key == KEY_UP    || key == KEY_K  || key == KEY_W)
+#define KEYBIND_RIGHT      (key == KEY_RIGHT || key == KEY_L  || key == KEY_D)
 typedef enum direction {
    LEFT,
    RIGHT,
@@ -152,16 +157,16 @@ void drawEyes(Vector2 position, Direction direction)
    Vector2 eyeOffset1, eyeOffset2;
    switch (direction) {
       case UP:
-         eyeOffset1 = (Vector2){CASE_SIZE * 0.2f, CASE_SIZE * 0.2f};
-         eyeOffset2 = (Vector2){CASE_SIZE * 0.6f, CASE_SIZE * 0.2f};
+         eyeOffset1 = (Vector2){CASE_SIZE * 0.2f, CASE_SIZE * 0.4f};
+         eyeOffset2 = (Vector2){CASE_SIZE * 0.6f, CASE_SIZE * 0.4f};
          break;
       case DOWN:
          eyeOffset1 = (Vector2){CASE_SIZE * 0.2f, CASE_SIZE * 0.6f};
          eyeOffset2 = (Vector2){CASE_SIZE * 0.6f, CASE_SIZE * 0.6f};
          break;
       case LEFT:
-         eyeOffset1 = (Vector2){CASE_SIZE * 0.2f, CASE_SIZE * 0.2f};
-         eyeOffset2 = (Vector2){CASE_SIZE * 0.2f, CASE_SIZE * 0.6f};
+         eyeOffset1 = (Vector2){CASE_SIZE * 0.4f, CASE_SIZE * 0.2f};
+         eyeOffset2 = (Vector2){CASE_SIZE * 0.4f, CASE_SIZE * 0.6f};
          break;
       case RIGHT:
          eyeOffset1 = (Vector2){CASE_SIZE * 0.6f, CASE_SIZE * 0.2f};
@@ -188,6 +193,7 @@ void drawEyes(Vector2 position, Direction direction)
 
 void drawSnake(Node* head, float dt)
 {
+   if (head == NULL) return;
    Node* temp = head;
    int i = 0;
    size_t len = snakeLen(&head);
@@ -214,7 +220,7 @@ void drawSnake(Node* head, float dt)
                      lerpColor(SNAKE_TAIL_COLOR,SNAKE_HEAD_COLOR, amount),
                      lerpColor(SNAKE_TAIL_COLOR,SNAKE_HEAD_COLOR, amountNext)
                      );
-                     eyePos = (Vector2){(temp->data.position.x - dt + 1), temp->data.position.y};
+               eyePos = (Vector2){(temp->data.position.x - dt + 1), temp->data.position.y};
                break;
             case RIGHT:
                DrawRectangleGradientH(
@@ -225,7 +231,7 @@ void drawSnake(Node* head, float dt)
                      lerpColor(SNAKE_TAIL_COLOR,SNAKE_HEAD_COLOR, amountNext),
                      lerpColor(SNAKE_TAIL_COLOR,SNAKE_HEAD_COLOR, amount)
                      );
-                     eyePos = (Vector2){(temp->data.position.x + dt - 1), temp->data.position.y};
+               eyePos = (Vector2){(temp->data.position.x + dt - 1), temp->data.position.y};
                break;
             case UP:
                DrawRectangleGradientV(
@@ -236,7 +242,7 @@ void drawSnake(Node* head, float dt)
                      lerpColor(SNAKE_TAIL_COLOR, SNAKE_HEAD_COLOR, amount),
                      lerpColor(SNAKE_TAIL_COLOR, SNAKE_HEAD_COLOR, amountNext)
                      );
-                     eyePos = (Vector2){temp->data.position.x, (temp->data.position.y - dt + 1 )};
+               eyePos = (Vector2){temp->data.position.x, (temp->data.position.y - dt + 1 )};
                break;
             case DOWN:
                DrawRectangleGradientV(
@@ -247,7 +253,7 @@ void drawSnake(Node* head, float dt)
                      lerpColor(SNAKE_TAIL_COLOR, SNAKE_HEAD_COLOR, amountNext),
                      lerpColor(SNAKE_TAIL_COLOR, SNAKE_HEAD_COLOR, amount)
                      );
-                     eyePos = (Vector2){temp->data.position.x, (temp->data.position.y + dt - 1 )};
+               eyePos = (Vector2){temp->data.position.x, (temp->data.position.y + dt - 1 )};
                break;
          }
       } else { // BODY AND TAIL
@@ -450,7 +456,7 @@ int main(void)
          );
 #endif
    SetRandomSeed(time(NULL));
-   SetConfigFlags(FLAG_MSAA_4X_HINT);
+   SetConfigFlags(RL_WINDOW_CONFIG_FLAGS);
    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "SNAKE");
    SetTargetFPS(SCREEN_FPS);
 
@@ -474,10 +480,10 @@ int main(void)
    while (!WindowShouldClose())
    {
       key = GetKeyPressed();
-      if (key == KEY_RIGHT && direction != LEFT ) direction = RIGHT;
-      if (key == KEY_UP    && direction != DOWN ) direction = UP;
-      if (key == KEY_LEFT  && direction != RIGHT) direction = LEFT;
-      if (key == KEY_DOWN  && direction != UP   ) direction = DOWN;
+      if (KEYBIND_RIGHT && snake->data.direction != LEFT ) direction = RIGHT;
+      if (KEYBIND_UP    && snake->data.direction != DOWN ) direction = UP;
+      if (KEYBIND_LEFT  && snake->data.direction != RIGHT) direction = LEFT;
+      if (KEYBIND_DOWN  && snake->data.direction != UP   ) direction = DOWN;
 #ifdef TOUCH_SUPPORT
       if (IsGestureDetected(GESTURE_SWIPE_RIGHT) && direction != LEFT)
          direction = RIGHT;
@@ -497,18 +503,19 @@ int main(void)
          computePhysics(&snake, apples, direction);
          dt = 0;
       }
-
       float ndt = dt * TARGET_FPS; // normalized dt for smooth rendering
 
       BeginDrawing();
       {
          //DrawText(TextFormat("dt: %f", dt), 50, 50, 10, BEIGE);
-         DrawFPS(15,15);
          ClearBackground(BACKGROUND_COLOR);
          //ClearBackground((Color){255*dt*6, 255-255*dt*6, 255, 255}); // EPILEPSY MODE
          drawApples(apples);
          drawSnake(snake, ndt);
          DrawText(TextFormat("Length: %zu", snakeLen(&snake)), 200, 15, 20, TEXT_COLOR);
+#ifdef SHOW_FPS
+         DrawFPS(15,15);
+#endif
       }
       EndDrawing();
 
